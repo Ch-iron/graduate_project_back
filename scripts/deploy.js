@@ -13,7 +13,7 @@ async function main() {
   console.log("Contract deployed to address", cutoken.address);
 
   const CUTokenSwap = await hre.ethers.getContractFactory("CUTokenSwap");
-  const cutokenswap = await CUTokenSwap.deploy('0xDE2b20180827BF70D70e712E72519Bc7609Bddef', '0x62EE3A6521a1Cf48679dFeef07a9978b9131cb12', 10**4);
+  const cutokenswap = await CUTokenSwap.deploy(cutoken.address);
 
   console.log("Contract deployed to address", cutokenswap.address);
 }
