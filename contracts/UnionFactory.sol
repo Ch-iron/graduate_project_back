@@ -16,7 +16,7 @@ contract UnionFactory {
         return allUnions;
     }
 
-    function createUnion(address token, int people, int amount, string memory name, address swap_cont, address list_cont, address factory_cont) external {
+    function createUnion(address token, int people, int amount, string memory name, address swap_cont, address list_cont, address factory_cont) external returns (address) {
         require(getUnion[name] == address(0), "UNION_EXISTS");
         Union union = new Union();
         // bytes memory bytecode = type(Union).creationCode;
@@ -24,11 +24,11 @@ contract UnionFactory {
         // assembly {
         //     union := create2(0, add(bytecode, 32), mload(bytecode), salt)
         // }
-        // Union(union).initialize(token, people, amount, name, swap_cont, list_cont, factory_cont);
         union.initialize(token, people, amount, name, swap_cont, list_cont, factory_cont);
         getUnion[name] = address(union);
         allUnions.push(address(union));
         emit UnionCreated(people, amount, name);
+        return address(union);
     }
 
     function deleteUnion(string memory name) external {
@@ -43,5 +43,6 @@ contract UnionFactory {
             allUnions[i] = allUnions[i + 1];
         }
         allUnions.pop();
+        delete getUnion[name];
     }
 }

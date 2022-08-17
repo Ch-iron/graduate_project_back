@@ -107,7 +107,7 @@ contract Union {
         participants[order - 1].hasCollateral = true;
     }
 
-    function CUdeposit() public {
+    function CUDeposit() public {
         int order = getOrder(msg.sender);
         if (round > 1) {
             if (block.timestamp > dueDate) {
@@ -118,7 +118,7 @@ contract Union {
                     initDate = block.timestamp;
                     // dueDate = initDate + 2592000;
                     dueDate = initDate + 180;
-                    _CUwithdrawl();
+                    _CUWithdrawl();
                 }
             }
             else {
@@ -131,7 +131,7 @@ contract Union {
         }
     }
 
-    function CUreceive() public {
+    function CUReceive() public {
         require(participants[round - 1].joiner == msg.sender, "Not your turn");
         require(block.timestamp > dueDate, "Yet receive CU");
         for (int i = 0; i < people; i++) {
@@ -143,7 +143,7 @@ contract Union {
                     initDate = block.timestamp;
                     // dueDate = initDate + 2592000;
                     dueDate = initDate + 180;
-                    _CUwithdrawl();
+                    _CUWithdrawl();
                 }
             }
         }
@@ -163,7 +163,7 @@ contract Union {
             initDate = block.timestamp;
             // dueDate = initDate + 2592000;
             dueDate = initDate + 180;
-            _CUwithdrawl();
+            _CUWithdrawl();
         }
     }
 
@@ -176,7 +176,7 @@ contract Union {
         emit Slash(success, data);
     }
 
-    function _CUwithdrawl() private {
+    function _CUWithdrawl() private {
         token.transfer(participants[round - 1].joiner, uint(amount * (100 + participants[round - 1].interest) / 100));
         round++;
         count = 0;
