@@ -5,9 +5,11 @@ pragma solidity ^0.8.7;
 import "./CUToken.sol";
 
 contract Union {
-    // 컨트랙 삭제하는 코드도 넣기
     address public factory;
     ERC20 public token;
+    address public swapCont;
+    address public listCont;
+    address public factoryCont;
 
     int public people;
     int public amount;
@@ -18,6 +20,7 @@ contract Union {
     uint public initDate;
     uint public dueDate;
     bool public isActivate;
+    bool public isFull;
 
     struct Participant {
         address payable joiner;
@@ -34,6 +37,7 @@ contract Union {
     event Slash(bool success, bytes data);
     event Deposit(address indexed sender, uint amount);
     event Withdrawl(address indexed receiver, uint amount);
+    event Finish(bool success, bytes data);
 
     constructor() {
         factory = msg.sender;
@@ -43,11 +47,14 @@ contract Union {
         return address(this).balance;
     }
 
-    function initialize(address _token, int _people, int _amount, string memory _name) external {
+    function initialize(address _token, int _people, int _amount, string memory _name, address _swapCont, address _listCont, address _factoryCont) external {
         require(msg.sender == factory, "Not Authorized");
         require(_amount >= 10**18, "minimum amount: 1 CU");
         require(_people >= 3 && _people <= 13 && _people%2 == 1, "minimum people: 3 & max people: 13, only odd number");
         token = ERC20(_token);
+        swapCont = _swapCont;
+        listCont = _listCont;
+        factoryCont = _factoryCont;
         people = _people;
         amount = _amount;
         name = _name;
@@ -55,6 +62,7 @@ contract Union {
         round = 1;
         count = 0;
         isActivate = true;
+        isFull = false;
     }
 
     function getOrder(address participant) public view returns (int order) {
@@ -66,10 +74,21 @@ contract Union {
         return 0;
     }
 
-    function participate(int order, address cont) public payable {
-        require(order > 0 &&  order <= people, "Full Union");
+    function getUnionOrder() public view returns (uint[] memory){
+        uint[] memory unionorder = new uint[](uint(people));
+        for (int i = 0; i < people; i++) {
+            if (participants[i].joiner != address(0)) {
+                unionorder[uint(i)] = 1;
+            }
+        }
+        return unionorder;
+    }
+
+    function participate(int order) public payable {
+        require(order > 0 &&  order <= people, "Order must bigger than 0 and less than max people");
         require(participants[order - 1].joiner == address(0), "Already exist order");
         require(isParticipate[msg.sender] == false, "Already participate");
+        require(isFull == false, "Full Union");
         participants[order - 1] = Participant(
             payable(msg.sender),
             false,
@@ -78,7 +97,7 @@ contract Union {
             false
         );
         isParticipate[msg.sender] = true;
-        (bool success, bytes memory data) = address(cont).call(abi.encodeWithSignature("add(address,address)", address(msg.sender), address(this)));
+        (bool success, bytes memory data) = address(listCont).call(abi.encodeWithSignature("add(address,address)", address(msg.sender), address(this)));
         emit Add(success, data);
         
         // collateral_Deposit
@@ -88,11 +107,11 @@ contract Union {
         participants[order - 1].hasCollateral = true;
     }
 
-    function CUdeposit(address cont) public {
+    function CUdeposit() public {
         int order = getOrder(msg.sender);
         if (round > 1) {
             if (block.timestamp > dueDate) {
-                _collateralSlash(cont);
+                _collateralSlash();
                 participants[order - 1].isDeposit = true;
                 count++;
                 if (count == uint(people)) {
@@ -112,6 +131,24 @@ contract Union {
         }
     }
 
+    function CUreceive() public {
+        require(participants[round - 1].joiner == msg.sender, "Not your turn");
+        require(block.timestamp > dueDate, "Yet receive CU");
+        for (int i = 0; i < people; i++) {
+            if (participants[i].isDeposit == false) {
+                _collateralSlash();
+                participants[i].isDeposit = true;
+                count++;
+                if (count == uint(people)) {
+                    initDate = block.timestamp;
+                    // dueDate = initDate + 2592000;
+                    dueDate = initDate + 180;
+                    _CUwithdrawl();
+                }
+            }
+        }
+    }
+
     function _CUDeposit(int order) private {
         require(participants[order - 1].hasCollateral == true, "Please deposit collateral first");
         require(participants[order - 1].isDeposit == false, "You already deposit in this round");
@@ -122,6 +159,7 @@ contract Union {
         participants[order - 1].isDeposit = true;
         count++;
         if (count == uint(people)) {
+            isFull = true;
             initDate = block.timestamp;
             // dueDate = initDate + 2592000;
             dueDate = initDate + 180;
@@ -133,8 +171,8 @@ contract Union {
         payable(msg.sender).transfer(uint(periodicPayment) / 10**4);
     }
 
-    function _collateralSlash(address cont) private {
-        (bool success, bytes memory data) = address(cont).call{value: uint(periodicPayment) / 10**4}(abi.encodeWithSignature("buy()"));
+    function _collateralSlash() private {
+        (bool success, bytes memory data) = address(swapCont).call{value: uint(periodicPayment) / 10**4}(abi.encodeWithSignature("buy()"));
         emit Slash(success, data);
     }
 
@@ -147,6 +185,8 @@ contract Union {
         }
         if ((round - 1) == people) {
             isActivate = false;
+            (bool success, bytes memory data) = address(factoryCont).call(abi.encodeWithSignature("deleteUnion(string)", name));
+            emit Finish(success, data);
             // selfdestruct(payable(0x0e3E900b7ABB2Ccd555E4aDA96A33090dD9b5517));
         }
     }

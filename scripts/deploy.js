@@ -7,9 +7,9 @@
 const hre = require("hardhat");
 
 async function main() {
-  const CUToken = await hre.ethers.getContractFactory("CUToken");
-  const cutoken = await CUToken.deploy();
-  console.log("Contract deployed to address", cutoken.address);
+  // const CUToken = await hre.ethers.getContractFactory("CUToken");
+  // const cutoken = await CUToken.deploy();
+  // console.log("Contract deployed to address", cutoken.address);
 
   // const CUTokenSwap = await hre.ethers.getContractFactory("CUTokenSwap");
   // const cutokenswap = await CUTokenSwap.deploy(cutoken.address);
@@ -23,9 +23,9 @@ async function main() {
   // const union = await UnionFactory.deploy();
   // console.log("Contract deployed to address", unionfactory.address);
 
-  // const UnionFactory = await hre.ethers.getContractFactory("UnionFactory");
-  // const unionfactory = await UnionFactory.deploy();
-  // console.log("Contract deployed to address", unionfactory.address);
+  const UnionFactory = await hre.ethers.getContractFactory("UnionFactory");
+  const unionfactory = await UnionFactory.deploy();
+  console.log("Contract deployed to address", unionfactory.address);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
