@@ -31,7 +31,7 @@ contract UnionFactory {
         return address(union);
     }
 
-    function deleteUnion(string memory name) external {
+    function deleteAllUnion(string memory name) external {
         uint stopPoint;
         for (uint i = 0; i < allUnions.length; i++) {
             if (address(allUnions[i]) == getUnion[name]) {
@@ -43,6 +43,9 @@ contract UnionFactory {
             allUnions[i] = allUnions[i + 1];
         }
         allUnions.pop();
+    }
+
+    function deleteGetUnion(string memory name) external {
         delete getUnion[name];
     }
 }

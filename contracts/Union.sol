@@ -37,6 +37,7 @@ contract Union {
     event Slash(bool success, bytes data);
     event Deposit(address indexed sender, uint amount);
     event Withdrawl(address indexed receiver, uint amount);
+    event Full(bool success, bytes data);
     event Finish(bool success, bytes data);
 
     constructor() {
@@ -159,6 +160,10 @@ contract Union {
         participants[order - 1].isDeposit = true;
         count++;
         if (count == uint(people)) {
+            if (round == 1) {
+                (bool success, bytes memory data) = address(factoryCont).call(abi.encodeWithSignature("deleteAllUnion(string)", name));
+                emit Full(success, data);
+            }
             isFull = true;
             initDate = block.timestamp;
             // dueDate = initDate + 2592000;
@@ -185,7 +190,7 @@ contract Union {
         }
         if ((round - 1) == people) {
             isActivate = false;
-            (bool success, bytes memory data) = address(factoryCont).call(abi.encodeWithSignature("deleteUnion(string)", name));
+            (bool success, bytes memory data) = address(factoryCont).call(abi.encodeWithSignature("deleteGetUnion(string)", name));
             emit Finish(success, data);
             // selfdestruct(payable(0x0e3E900b7ABB2Ccd555E4aDA96A33090dD9b5517));
         }
