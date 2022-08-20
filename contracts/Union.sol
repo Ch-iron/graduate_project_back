@@ -127,10 +127,10 @@ contract Union {
         isParticipate[msg.sender] = false;
         delete participants[order - 1];
         participantCount--;
-        if (participantCount == 0) {
-            address(factoryCont).call(abi.encodeWithSignature("deleteAllUnion(string)", name));
-            address(factoryCont).call(abi.encodeWithSignature("deleteGetUnion(string)", name));
-        }
+        // if (participantCount == 0) {
+        //     address(factoryCont).call(abi.encodeWithSignature("deleteAllUnion(string)", name));
+        //     address(factoryCont).call(abi.encodeWithSignature("deleteGetUnion(string)", name));
+        // }
     }
 
     function CUDeposit() public {
