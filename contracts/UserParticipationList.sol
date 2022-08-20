@@ -27,6 +27,4 @@ contract UserParticipationList{
         }
         getJoinUnion[user].pop();
     }
-}       return getJoinUnion[user];
-    } 
 }
