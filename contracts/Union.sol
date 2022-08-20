@@ -17,6 +17,7 @@ contract Union {
     int public periodicPayment;
     int public round;
     uint public count;
+    uint public participantCount;
     uint public initDate;
     uint public dueDate;
     bool public isActivate;
@@ -34,6 +35,7 @@ contract Union {
     mapping (address => bool) public isParticipate;
     
     event Add(bool success, bytes data);
+    event Exit(bool success, bytes data);
     event Slash(bool success, bytes data);
     event Deposit(address indexed sender, uint amount);
     event Withdrawl(address indexed receiver, uint amount);
@@ -62,6 +64,7 @@ contract Union {
         periodicPayment = _amount / _people;
         round = 1;
         count = 0;
+        participantCount = 0;
         isActivate = true;
         isFull = false;
     }
@@ -98,6 +101,7 @@ contract Union {
             false
         );
         isParticipate[msg.sender] = true;
+        participantCount++;
         (bool success, bytes memory data) = address(listCont).call(abi.encodeWithSignature("add(address,address)", address(msg.sender), address(this)));
         emit Add(success, data);
         
@@ -108,8 +112,30 @@ contract Union {
         participants[order - 1].hasCollateral = true;
     }
 
+    function exit(int order) public {
+        require(order > 0 &&  order <= people, "Order must bigger than 0 and less than max people");
+        require(participants[order - 1].joiner == msg.sender, "Wrong Order");
+        require(isFull == false, "Full union is not exit");
+        if (participants[order - 1].isDeposit == false) {
+            payable(msg.sender).transfer(uint(amount / 10**4));
+        } else {
+            payable(msg.sender).transfer(uint(periodicPayment * (people - 1) / 10**4));
+            token.transfer(msg.sender, uint(periodicPayment));
+        }
+        (bool success, bytes memory data) = address(listCont).call(abi.encodeWithSignature("exit(address,address)", address(msg.sender), address(this)));
+        emit Exit(success, data);
+        isParticipate[msg.sender] = false;
+        delete participants[order - 1];
+        participantCount--;
+        if (participantCount == 0) {
+            address(factoryCont).call(abi.encodeWithSignature("deleteAllUnion(string)", name));
+            address(factoryCont).call(abi.encodeWithSignature("deleteGetUnion(string)", name));
+        }
+    }
+
     function CUDeposit() public {
         int order = getOrder(msg.sender);
+        require(round <= people, "This union is finished");
         if (round > 1) {
             if (block.timestamp > dueDate) {
                 _collateralSlash();
@@ -133,6 +159,7 @@ contract Union {
     }
 
     function CUReceive() public {
+        require(isFull == true, "Not initiate union");
         require(participants[round - 1].joiner == msg.sender, "Not your turn");
         require(block.timestamp > dueDate, "Yet receive CU");
         for (int i = 0; i < people; i++) {
